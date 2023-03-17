@@ -1,0 +1,47 @@
+header, footer {
+    background-color: #9e19c7;
+		font-weight: bold;
+}
+
+.logo {
+    width: 200px;
+
+}
+
+.nav-link, footer {
+    color: rgb(0, 0, 0);
+}
+
+.name-company p {
+    color: rgb(0, 0, 0);
+}
+
+main {
+    background-color: #ffa704;
+}
+
+.routes-list, .guides-list, .dignity {
+    border: rgb(0, 0, 0) 2px solid;
+}
+
+.custom-tooltip {
+    --bs-tooltip-bg: var(--bs-secondary);
+}
+
+.dropdown {
+    height: 100px;
+}
+
+.modal-content {
+    background-color:#ffa704;
+}
+
+.alerts {
+    position: sticky;
+    top: 0;
+    text-align: center;
+}
+
+textarea {
+    resize: none;
+}
