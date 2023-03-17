@@ -483,3 +483,123 @@ function hoursNumber() {                         //Количество часо
     let hours = form.elements["selectLength"].value;
     return hours;
 }
+
+function checkOptionFirst() {                    //Выбор первой опции
+    let option = document.querySelector("#option1");
+    let price = 1;
+    if (option.checked) {
+        price = 1.3;
+    }
+    return price;
+}
+
+function checkOptionSecond() {                   //Выбор второй опции
+    let option = document.querySelector("#option2");
+    let price = 0;
+    let form = document.querySelector("#create-task-form");
+    let number = form.elements["customRange2"].value;
+    if (option.checked) {
+        price = 500 * number;
+    }
+    return price;
+}
+
+function changeNumberOfPeople(event) {                //Изменение количества человек
+    document.querySelector("#number-people").value = event.target.value;
+    let form = document.querySelector("#create-task-form");
+    let checkedGuide = document.querySelector(".btn-guide");
+    let guideInfo = checkedGuide.parentElement.parentElement.children;
+    let route = document.querySelector(".guides").textContent.split(":");
+    let name = "";
+    let price = 0;
+    let hours = form.elements["selectLength"].value;
+    for (let guide of guideInfo) {
+        if (guide.classList.contains("nameOfGuide")) name = guide.textContent;
+        if (guide.classList.contains("priceOfGuide")) price = parseInt(guide.textContent);
+    }
+    price = (guideServiceCost() * hoursNumber() * isThisDayOff() + isItMorningOrEvening() + numberOfVisitors() + checkOptionSecond()) * checkOptionFirst();
+    form.elements["price"].value = parseInt(price);
+}
+
+function checkoutRoute(event) {                       //Открытие модального окна с оформлением заявки
+    let form = document.querySelector("#create-task-form");
+    let checkedGuide = document.querySelector(".btn-guide");
+    let guideInfo = checkedGuide.parentElement.parentElement.children;
+    let route = document.querySelector(".guides").textContent.split(":");
+    let date = new Date();
+    date.setDate(date.getDate() + 1);
+    form.querySelector("#date").value = date.toJSON().slice(0, 10);
+    form.querySelector("#date").setAttribute("min", date.toJSON().slice(0, 10));
+    let name = "";
+    let price = 0;
+    for (let guide of guideInfo) {
+        if (guide.classList.contains("nameOfGuide")) name = guide.textContent;
+        if (guide.classList.contains("priceOfGuide")) price = parseInt(guide.textContent);
+    }
+    form.elements["name"].value = name;
+    form.elements["route"].value = route[1];
+    price = (guideServiceCost() * hoursNumber() * isThisDayOff() + isItMorningOrEvening() + numberOfVisitors() + checkOptionSecond()) * checkOptionFirst();
+    form.elements["price"].value = parseInt(price);
+}
+
+function changeTotalPrice(event) {           //Изменение цены
+    let form = document.querySelector("#create-task-form");
+    price = (guideServiceCost() * hoursNumber() * isThisDayOff() + isItMorningOrEvening() + numberOfVisitors() + checkOptionSecond()) * checkOptionFirst();
+    form.elements["price"].value = parseInt(price);
+}
+
+async function sendRequest(event) {                               //Оформление заявки
+    if (!event.target.classList.contains("create-btn")) return;
+    let formForSend = new FormData();
+    let guideId = document.querySelector(".btn-guide").getAttribute("data-guide-id");
+    let routeId = document.querySelector(".search-btn-guides").getAttribute("data-route-id");
+    let form = document.querySelector("#create-task-form");
+    formForSend.append("guide_id", guideId);
+    formForSend.append("route_id", routeId);
+    formForSend.append("date", form.elements["date"].value);
+    formForSend.append("time", form.elements["time"].value);
+    formForSend.append("duration", form.elements["selectLength"].value);
+    formForSend.append("persons", form.elements["customRange2"].value);
+    formForSend.append("price", form.elements["price"].value);
+    formForSend.append("optionFirst", (form.elements["option1"].checked) ? 1 : 0);
+    formForSend.append("optionSecond", (form.elements["option2"].checked) ? 1 : 0);
+    let nUrl = new URL(url + "orders");
+    nUrl.searchParams.append("api_key", apiKey);
+    if (form.elements["time"].validity.valid) {                    //Проверка валидности времени
+        try {
+            event.target.setAttribute("type", "button");
+            let modal = document.querySelector("#addTask");
+            var modalInstance = bootstrap.Modal.getInstance(modal);
+            modalInstance.hide();
+            let response = await fetch(nUrl, {
+                method: "POST",
+                body: formForSend,
+            });
+            let data = await response.json();
+            if (data.error) showAlert(data.error, "alert-danger");
+            else showAlert("Заявка успешно оформлена", "alert-success");
+        } catch (error) {
+            showAlert(error.message, "alert-danger");
+        }
+    } else {
+        event.target.setAttribute("type", "submit");
+    }
+}
+
+window.onload = function () {
+    waysSearchBtnListener()
+    newSearch()
+    document.querySelector(".main-objects-list").onclick = clickMainObject;
+    document.querySelector(".pagination").onclick = pageBtnHandler;
+    document.querySelector(".search-btn").onclick = newSearch;
+    document.querySelector(".language-list").onclick = btnLanguageClick;
+    document.querySelector(".search-btn-guides").onclick = searchGuidesWithFilters;
+    document.querySelector("#customRange2").oninput = changeNumberOfPeople;
+    document.querySelector(".checkout-route").onclick = checkoutRoute;
+    document.querySelector("#selectLength").oninput = changeTotalPrice;
+    document.querySelector("#time").oninput = changeTotalPrice;
+    document.querySelector("#date").oninput = changeTotalPrice;
+    document.querySelector("#option1").oninput = changeTotalPrice;
+    document.querySelector("#option2").oninput = changeTotalPrice;
+    document.querySelector(".create-btn").onclick = sendRequest;
+};
