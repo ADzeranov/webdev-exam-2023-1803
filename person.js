@@ -382,3 +382,120 @@ function createRoute(data, number) {                    //Создание за�
 
     table.append(row);
 }
+function pageBtnHandler(event) {                              //Переключение по страницам (пагинация)
+	if (!event.target.classList.contains("page-link")) return;
+	let oldBtn = document.querySelector(".active");
+	oldBtn.classList.remove("active");
+	event.target.classList.add("active");
+	createElements(allData);
+}
+
+function createElements(data) {                            //Создание списка заявок
+	document.querySelector(".table-routes").innerHTML = "";
+	let oldBtn = document.querySelector(".active");
+	let pagination = document.querySelector(".pagination");
+	pagination.innerHTML = "";
+	for (let i = 1; i < Math.ceil(data.length / 5) + 1; i++) {
+			let li = document.createElement("li");
+			li.classList.add("page-item");
+			let a = document.createElement("a");
+			a.classList.add("page-link");
+			a.classList.add("bg-secondary");
+			a.classList.add("text-warning");
+			if (oldBtn.textContent == i) a.classList.add("active");
+			a.setAttribute("href", "#");
+			a.textContent = i;
+			a.onclick = pageBtnHandler;
+			li.append(a);
+			pagination.append(li);
+	}
+
+	let currentPage = document.querySelector(".active").textContent;
+	let start = currentPage * 5 - 5;
+	let end = (start + 5) > data.length ? (start + data.length % 5) : start + 5;
+	for (let i = start; i < end; i++) {
+			createRoute(data[i], i + 1);
+	}
+}
+
+async function downloadData() {                  //Загрузка заявок
+	let nUrl = new URL(url + "orders");
+	nUrl.searchParams.append("api_key", apiKey);
+
+	try {
+			let response = await fetch(nUrl);
+			let data = await response.json();
+			allData = JSON.parse(JSON.stringify(data));
+			createElements(data);
+	} catch (error) {
+			console.log(error.message);
+	}
+}
+
+async function deleteTask(event) {                        //Удаление заявки
+	if (!event.target.classList.contains("delete")) return;
+	let idTask = event.target.getAttribute("data-task-id");
+	let nUrl = new URL(url + "orders/" + idTask);
+	nUrl.searchParams.append("api_key", apiKey);
+	try {
+			let response = await fetch(nUrl, {
+					method: "DELETE",
+			});
+			let data = await response.json();
+			document.querySelector(".page-link").classList.add("active");
+			if (data.error) showAlert(data.error, "alert-danger");
+			else showAlert("Заявка успешно удалена", "alert-success");
+			downloadData();
+	} catch (error) {
+			console.log(error.message);
+	}
+}
+
+async function saveNewTask(event) {                      //Сохранение отредактированной заявки
+	if (!event.target.classList.contains("create-change-task")) return;
+	let formForSend = new FormData();
+	let form = document.querySelector("#create-task-form");
+	formForSend.append("date", form.elements["date"].value);
+	formForSend.append("time", form.elements["time"].value);
+	formForSend.append("duration", form.elements["selectLength"].value);
+	formForSend.append("persons", form.elements["customRange2"].value);
+	formForSend.append("price", form.elements["price"].value);
+	formForSend.append("optionFirst", (form.elements["option1"].checked) ? 1 : 0);
+	formForSend.append("optionSecond", (form.elements["option2"].checked) ? 1 : 0);
+	let taskId = event.target.getAttribute("data-task-id");
+	let nUrl = new URL(url + "orders/" + taskId);
+	nUrl.searchParams.append("api_key", apiKey);
+
+	if (form.elements["time"].validity.valid) {                      //Проверка валидности времени
+			try {
+					event.target.setAttribute("type", "button");
+					let modal = document.querySelector("#showTask");
+					var modalInstance = bootstrap.Modal.getInstance(modal);
+					modalInstance.hide();
+					let response = await fetch(nUrl, {
+							method: "PUT",
+							body: formForSend,
+					});
+					let data = await response.json();
+					if (data.error) showAlert(data.error, "alert-danger");
+					else showAlert("Заявка успешно изменена", "alert-success");
+					downloadData();
+					console.log(data);
+			} catch (error) {
+					showAlert(error.message, "alert-danger");
+			}
+	} else {
+			event.target.setAttribute("type", "submit");
+	}
+}
+
+window.onload = function () {
+	downloadData();
+	document.querySelector(".delete").onclick = deleteTask;
+	document.querySelector("#selectLength").oninput = changeTotalPrice;
+	document.querySelector("#time").oninput = changeTotalPrice;
+	document.querySelector("#date").oninput = changeTotalPrice;
+	document.querySelector("#option1").oninput = changeTotalPrice;
+	document.querySelector("#option2").oninput = changeTotalPrice;
+	document.querySelector(".create-btn").onclick = saveNewTask;
+};
