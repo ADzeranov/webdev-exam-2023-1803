@@ -484,16 +484,16 @@ function hoursNumber() {                         //Количество часо
     return hours;
 }
 
-function checkOptionFirst() {                    //Выбор первой опции
+function checkOptionFirst() {                             //Выбор первой опции
     let option = document.querySelector("#option1");
     let price = 1;
     if (option.checked) {
-        price = 1.3;
+        price = 0.75;
     }
     return price;
 }
 
-function checkOptionSecond() {                   //Выбор второй опции
+function checkOptionSecond() {                            //Выбор второй опции
     let option = document.querySelector("#option2");
     let price = 0;
     let form = document.querySelector("#create-task-form");
